@@ -3,6 +3,7 @@ function_name: kenall_for_slack
 handler: aws_lambda.handler
 description: kenall.jp App
 runtime: python3.8
+role: aws-lambda-invocation-role
 environment_variables:
     SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
     SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}

@@ -25,7 +25,8 @@ app = App(
 
 @app.middleware
 def print_request(body: dict, next: Callable, logger: Logger):
-    logger.debug(f"Request body: {body}")
+    if logger.level <= logging.DEBUG:
+        logger.debug(f"Request body: {body}")
     next()
 
 
@@ -65,21 +66,30 @@ search_form = {
 }
 
 
-@app.command("/kenall")
-def handle_commands(body: dict, ack: Ack, client: WebClient, logger: Logger):
-    postal_code = body.get("text", "").strip()
-    if len(postal_code) == 0:
-        ack()
+def open_search_window_if_no_arg(body: dict, client: WebClient):
+    if len(body.get("text", "").strip()) == 0:
         client.views_open(
             trigger_id=body["trigger_id"],
             view=search_form,
         )
+
+
+def handle_commands(body: dict, ack: Ack, logger: Logger):
+    postal_code = body.get("text", "").strip()
+    if len(postal_code) == 0:
+        ack()
     else:
         blocks = call_kenall_and_build_blocks(postal_code, logger)
         ack(
             text="ケンオールでの検索結果です",
             blocks=blocks,
         )
+
+
+app.command(command="/kenall")(
+    ack=handle_commands,
+    lazy=[open_search_window_if_no_arg],
+)
 
 
 @app.shortcut("kenall-search")

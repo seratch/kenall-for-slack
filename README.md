@@ -6,7 +6,7 @@
 
 <img src="https://user-images.githubusercontent.com/19658/107915466-e230c280-6fa7-11eb-987e-0f1e2a2241c1.gif" width=500>
 
-### 動かし方
+### とりあえず動かしてみる
 
 ケンオールの API キーを発行、Slack アプリの設定を https://api.slack.com/apps で行った後、以下で起動できます。
 
@@ -30,26 +30,6 @@ FLASK_APP=flask_app.py FLASK_ENV=development flask run -p 3000
 
 別のターミナルで `ngrok http 3000` とすると公開 URL を発行できます。https://api.slack.com/apps のアプリ設定で Request URL に `http://{あなたのサブドメイン}.ngrok.io/slack/events` を設定してください。
 
-### AWS Lambda で動かす
-
-以下は python-lambda で Lambda を作って API Gateway は管理コンソールや aws-cli から手動で作る手順です。
-
-```bash
-pip install python-lambda
-
-export SLACK_SIGNING_SECRET=
-export SLACK_BOT_TOKEN=
-export KENALL_API_KEY=
-# Lambda のときはこれを忘れずに
-export SLACK_PROCESS_BEFORE_RESPONSE=1
-
-lambda deploy \
-  --config-file aws_lambda_config.yaml \
-  --requirements requirements-aws.txt
-```
-
-python-lambda は非常に高速なデプロイができるツールなので、紹介していますが、API Gateway も含め一元管理したい場合は他のソリューションを使ってください。
-
 ### Docker で動かす
 
 Flask + Gunicorn の雛形の Dockerfile を置いてありますが、自由に変更してください。
@@ -65,6 +45,65 @@ docker run \
   -p 3000:3000 \
   -it your-repo/kenall-for-slack
 ```
+
+### AWS Lambda で動かす
+
+以下は python-lambda で Lambda を作って API Gateway は管理コンソールや aws-cli から手動で作る手順です。
+
+```bash
+# Lambda から Lambda を起動できる権限が必要です
+
+export policy_arn=`aws iam create-policy --policy-name aws-lambda-invocation-policy --policy-document '{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["lambda:InvokeFunction", "lambda:GetFunction"],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    }
+  ]
+}' | jq .Policy.Arn | tr -d \"`
+
+aws iam create-role --role-name aws-lambda-invocation-role --assume-role-policy-document '{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": ["lambda.amazonaws.com"] },
+      "Action": ["sts:AssumeRole"]
+    }
+  ]
+}
+'
+aws iam attach-role-policy --role-name aws-lambda-invocation-role --policy-arn $policy_arn
+
+# 必要な環境変数をあらかじめ設定しておきます
+
+export SLACK_SIGNING_SECRET=
+export SLACK_BOT_TOKEN=
+export KENALL_API_KEY=
+# Lambda のときはこれを忘れずに
+export SLACK_PROCESS_BEFORE_RESPONSE=1
+
+# デプロイに python-lambda というツールを使用します（アプリはこれに依存しません）
+
+pip install python-lambda
+
+lambda deploy \
+  --config-file aws_lambda_config.yaml \
+  --requirements requirements-aws.txt
+```
+
+python-lambda は非常に高速なデプロイができるツールなので、紹介していますが、API Gateway も含め一元管理したい場合は他のソリューションを使ってください。
 
 ### ライセンス
 

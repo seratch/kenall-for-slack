@@ -1,4 +1,4 @@
-## ケンオール API を Slack から使えるようにする Slack アプリ（非公式）
+## ケンオール API を Slack から使えるようにするアプリ（非公式）
 
 この Slack アプリは、[ケンオール API](https://kenall.jp/) を Slack から呼び出せるようにする実装例を示すためのサンプルアプリです。
 
@@ -9,6 +9,22 @@
 ### とりあえず動かしてみる
 
 ケンオールの API キーを発行、Slack アプリの設定を https://api.slack.com/apps で行った後、以下で起動できます。
+
+#### Slack アプリ初期設定
+
+Slack アプリの設定でやることは
+
+* **Features** > **OAuth & Permissions** で Bot Token Scopes に `commands` scope を追加
+* **Settings** > **Basic Information** の **Signing Secret** を `SLACK_SIGNING_SECRET` として環境変数に設定
+* **Settings** > **Install App** からインストールし、`xoxb-` ではじまる **Bot User OAuth Access Token** を `SLACK_BOT_TOKEN` として環境変数に設定
+
+が最低限の設定です。後ほどスラッシュコマンド、ショートカット・モーダルの有効化をしましょう。
+
+#### ケンオール設定
+
+アカウントを作成して、トライアルの状態で API キーを取得するだけです。
+
+#### Flask やソケットモードを使ったアプリ設定
 
 この例は Flask を使っていますが、すでに[ソケットモード](https://api.slack.com/socket-mode)についてご存知なら、そちらの方が楽だと思います。ソケットモードで起動する場合は、[こちらの記事](https://qiita.com/seratch/items/1a460c08c3e245b56441)の Python の例を参考に `python socket_mode_app.py` で起動してみてください。
 
@@ -29,6 +45,15 @@ FLASK_APP=flask_app.py FLASK_ENV=development flask run -p 3000
 ```
 
 別のターミナルで `ngrok http 3000` とすると公開 URL を発行できます。https://api.slack.com/apps のアプリ設定で Request URL に `http://{あなたのサブドメイン}.ngrok.io/slack/events` を設定してください。
+
+#### スラッシュコマンド、ショートカット・モーダルを有効化
+
+Flask で動かしているなら、確定したエンドポイントの URL を Request URL として **Slash Commands** と **Interactivity & Shortcuts** の設定画面に設定してください。ソケットモードを使っているなら URL の設定は不要です。
+
+<img width="600"  src="https://user-images.githubusercontent.com/19658/107947337-998ffe00-6fd5-11eb-8858-a1527561ec80.png">
+<img width="600" src="https://user-images.githubusercontent.com/19658/107947347-9bf25800-6fd5-11eb-98d2-7e6cbe0cbc1e.png">
+
+スラッシュコマンドは `/kenall`、グローバルショートカットの Callback ID は `kenall-search` とすると、このサンプルアプリのコードそのままで動作するでしょう。
 
 ### Docker で動かす
 

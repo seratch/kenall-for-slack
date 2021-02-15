@@ -46,6 +46,23 @@ lambda deploy \
 
 python-lambda は非常に高速でデプロイできるのでここでは紹介していますが、API Gateway も含め管理したい場合は他のソリューションを使ってください。
 
+### Docker で動かす
+
+Flask + Gunicorn の雛形の Dockerfile を置いてありますが、自由に変更されてください。
+
+```bash
+docker build . -t your-repo/kenall-for-slack
+
+docker run \
+  -e SLACK_SIGNING_SECRET=$SLACK_SIGNING_SECRET \
+  -e SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN \
+  -e KENALL_API_KEY=$KENALL_API_KEY \
+  -e PORT=3000 \
+  -p 3000:3000 \
+  -it your-repo/kenall-for-slack
+#
+```
+
 ### ライセンス
 
 The MIT License

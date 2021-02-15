@@ -1,16 +1,20 @@
 import logging
-from typing import List, Dict, Any
-
-logging.basicConfig(level=logging.DEBUG)
-
 import os
 from logging import Logger
+from typing import List, Dict, Any, Callable
 from urllib.parse import quote
 
 from slack_bolt import App, Ack
 from slack_sdk import WebClient
 
-process_before_response = os.environ.get("SLACK_PROCESS_BEFORE_RESPONSE") is not None
+logging.basicConfig(level=logging.DEBUG)
+
+# Visit https://kenall.jp/home and grab your api key
+kenall_api_key = os.environ["KENALL_API_KEY"]
+
+# This value must be True when you run this app on FaaS
+pbr_env = os.environ.get("SLACK_PROCESS_BEFORE_RESPONSE")
+process_before_response = pbr_env is not None and pbr_env == "1"
 
 app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),
@@ -19,9 +23,9 @@ app = App(
 )
 
 
-@app.use
-def print_request(body, next, logger):
-    logger.debug(f"body: {body}")
+@app.middleware
+def print_request(body: dict, next: Callable, logger: Logger):
+    logger.debug(f"Request body: {body}")
     next()
 
 
@@ -71,7 +75,7 @@ def handle_commands(body: dict, ack: Ack, client: WebClient, logger: Logger):
             view=search_form,
         )
     else:
-        blocks = call_kenall_api(postal_code, logger)
+        blocks = call_kenall_and_build_blocks(postal_code, logger)
         ack(
             text="ケンオールでの検索結果です",
             blocks=blocks,
@@ -131,7 +135,7 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
             },
         )
 
-    blocks = call_kenall_api(postal_code, logger)
+    blocks = call_kenall_and_build_blocks(postal_code, logger)
     result_view = {
         "type": "modal",
         "callback_id": "kenall-search",
@@ -157,24 +161,25 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
 
 import requests
 
-kenall_api_key = os.environ["KENALL_API_KEY"]
 
-
-def call_kenall_api(postal_code: str, logger: Logger) -> List[Dict[str, Any]]:
+def call_kenall_and_build_blocks(
+    postal_code: str, logger: Logger
+) -> List[Dict[str, Any]]:
     postal_code = postal_code.replace("-", "").replace("*", "").strip()
     url = f"https://api.kenall.jp/v1/postalcode/{quote(postal_code)}"
     headers = {"Authorization": f"Token {kenall_api_key}"}
     res = requests.get(url, headers=headers)
-    logger.debug(f"KENALL response (status: {res.status_code}, body: {res.text})")
-    postal_code = postal_code[:3] + "-" + postal_code[3:]
+    logger.debug(f"KENALL API response (status: {res.status_code}, body: {res.text})")
+    printable_code = postal_code[:3] + "-" + postal_code[3:]
     if res.status_code == 200:
         results = res.json().get("data")
+        result_num = len(results)
         blocks = [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f":postbox: *〒 {postal_code}* に対応する {len(results)} 件の郵便区画が見つかりました :postbox:",
+                    "text": f":postbox: *〒 {printable_code}* に対応する {result_num} 件の郵便区画が見つかりました :postbox:",
                 },
             }
         ]
@@ -234,10 +239,10 @@ def call_kenall_api(postal_code: str, logger: Logger) -> List[Dict[str, Any]]:
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f":postbox: *〒 {postal_code}* に対応する郵便区画は見つかりませんでした :postbox:",
+                    "text": f":postbox: *〒 {printable_code}* に対応する郵便区画は見つかりませんでした :postbox:",
                 },
             }
         ]
     raise RuntimeError(
-        f"Failed to call kenall.jp API status: {res.status_code}, body: {res.text}"
+        f"Failed to call KENALL API (status: {res.status_code}, body: {res.text})"
     )

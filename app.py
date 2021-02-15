@@ -10,9 +10,12 @@ from urllib.parse import quote
 from slack_bolt import App, Ack
 from slack_sdk import WebClient
 
+process_before_response = os.environ.get("SLACK_PROCESS_BEFORE_RESPONSE") is not None
+
 app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
+    process_before_response=process_before_response,
 )
 
 
@@ -20,23 +23,6 @@ app = App(
 def print_request(body, next, logger):
     logger.debug(f"body: {body}")
     next()
-
-
-@app.command("/kenall")
-def handle_commands(body: dict, ack: Ack, client: WebClient, logger: Logger):
-    postal_code = body.get("text", "").strip()
-    if len(postal_code) == 0:
-        ack()
-        client.views_open(
-            trigger_id=body["trigger_id"],
-            view=search_form,
-        )
-    else:
-        blocks = call_kenall_api(postal_code, logger)
-        ack(
-            text="ケンオールでの検索結果です",
-            blocks=blocks,
-        )
 
 
 search_form = {
@@ -75,6 +61,23 @@ search_form = {
 }
 
 
+@app.command("/kenall")
+def handle_commands(body: dict, ack: Ack, client: WebClient, logger: Logger):
+    postal_code = body.get("text", "").strip()
+    if len(postal_code) == 0:
+        ack()
+        client.views_open(
+            trigger_id=body["trigger_id"],
+            view=search_form,
+        )
+    else:
+        blocks = call_kenall_api(postal_code, logger)
+        ack(
+            text="ケンオールでの検索結果です",
+            blocks=blocks,
+        )
+
+
 @app.shortcut("kenall-search")
 def handle_shortcuts(body: dict, ack: Ack, client: WebClient):
     ack()
@@ -102,52 +105,54 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
             errors={"postal_code": "郵便番号は 123-4567 または 1234567 の形式で指定してください"},
         )
 
-    ack(
-        response_action="update",
-        view={
-            "type": "modal",
-            "callback_id": "kenall-search",
-            "title": {
-                "type": "plain_text",
-                "text": "ケンオール検索",
+    if not process_before_response:
+        ack(
+            response_action="update",
+            view={
+                "type": "modal",
+                "callback_id": "kenall-search",
+                "title": {
+                    "type": "plain_text",
+                    "text": "ケンオール検索",
+                },
+                "close": {
+                    "type": "plain_text",
+                    "text": "閉じる",
+                },
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f":postbox: *〒 {postal_code}* に対応する郵便区画を検索中... :mag:",
+                        },
+                    }
+                ],
             },
-            "close": {
-                "type": "plain_text",
-                "text": "閉じる",
-            },
-            "blocks": [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f":postbox: *〒 {postal_code}* に対応する郵便区画を検索中... :mag:",
-                    },
-                }
-            ],
-        },
-    )
+        )
 
     blocks = call_kenall_api(postal_code, logger)
-    client.views_update(
-        view_id=view["id"],
-        view={
-            "type": "modal",
-            "callback_id": "kenall-search",
-            "title": {
-                "type": "plain_text",
-                "text": "ケンオール検索",
-            },
-            "submit": {
-                "type": "plain_text",
-                "text": "再検索",
-            },
-            "close": {
-                "type": "plain_text",
-                "text": "閉じる",
-            },
-            "blocks": blocks,
+    result_view = {
+        "type": "modal",
+        "callback_id": "kenall-search",
+        "title": {
+            "type": "plain_text",
+            "text": "ケンオール検索",
         },
-    )
+        "submit": {
+            "type": "plain_text",
+            "text": "再検索",
+        },
+        "close": {
+            "type": "plain_text",
+            "text": "閉じる",
+        },
+        "blocks": blocks,
+    }
+    if process_before_response:
+        ack(response_action="update", view=result_view)
+    else:
+        client.views_update(view_id=view["id"], view=result_view)
 
 
 import requests

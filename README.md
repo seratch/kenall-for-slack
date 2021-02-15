@@ -28,6 +28,24 @@ FLASK_APP=flask_app.py FLASK_ENV=development flask run -p 3000
 
 別のターミナルで `ngrok http 3000` とすると公開 URL を発行できます。https://api.slack.com/apps のアプリ設定で Request URL に `http://{あなたのサブドメイン}.ngrok.io/slack/events` を設定してください。
 
+### AWS Lambda で動かす
+
+以下は python-lambda で Lambda を作って API Gateway は管理コンソールや aws-cli から手動で作る手順です。
+
+```bash
+pip install python-lambda
+export SLACK_SIGNING_SECRET=
+export SLACK_BOT_TOKEN=
+export KENALL_API_KEY=
+export SLACK_PROCESS_BEFORE_RESPONSE=1
+
+lambda deploy \
+  --config-file aws_lambda_config.yaml \
+  --requirements requirements-aws.txt
+```
+
+python-lambda は非常に高速でデプロイできるのでここでは紹介していますが、API Gateway も含め管理したい場合は他のソリューションを使ってください。
+
 ### ライセンス
 
 The MIT License

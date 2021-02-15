@@ -1,0 +1,10 @@
+region: ap-northeast-1
+function_name: kenall_for_slack
+handler: aws_lambda.handler
+description: kenall.jp App
+runtime: python3.8
+environment_variables:
+    SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+    SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
+    KENALL_API_KEY: ${KENALL_API_KEY}
+    SLACK_PROCESS_BEFORE_RESPONSE: ${SLACK_PROCESS_BEFORE_RESPONSE}

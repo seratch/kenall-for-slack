@@ -8,6 +8,7 @@ if __name__ == "__main__":
     handler = SocketModeHandler(app, app_level_token)
     handler.start()
 
+# export KENALL_API_KEY=
 # export SLACK_SIGNING_SECRET=
 # export SLACK_BOT_TOKEN=xoxb-
 # export SLACK_APP_TOKEN=xapp-

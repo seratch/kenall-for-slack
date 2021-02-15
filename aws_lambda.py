@@ -11,3 +11,13 @@ def handler(event, context):
 
     slack_handler = SlackRequestHandler(app=app)
     return slack_handler.handle(event, context)
+
+
+# pip install python-lambda
+#
+# export SLACK_SIGNING_SECRET=
+# export SLACK_BOT_TOKEN=
+# export KENALL_API_KEY=
+# export SLACK_PROCESS_BEFORE_RESPONSE=1
+#
+# lambda deploy --config-file aws_lambda_config.yaml --requirements requirements-aws.txt

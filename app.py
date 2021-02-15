@@ -17,6 +17,7 @@ pbr_env = os.environ.get("SLACK_PROCESS_BEFORE_RESPONSE")
 process_before_response = pbr_env is not None and pbr_env == "1"
 
 app = App(
+    token_verification_enabled=False,
     token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
     process_before_response=process_before_response,

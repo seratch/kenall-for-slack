@@ -2,22 +2,18 @@ import logging
 import os
 from logging import Logger
 from typing import List, Dict, Any, Callable
-from urllib.parse import quote
 
 from slack_bolt import App, Ack
 from slack_sdk import WebClient
 
 logging.basicConfig(level=logging.DEBUG)
 
-# Visit https://kenall.jp/home and grab your api key
-kenall_api_key = os.environ["KENALL_API_KEY"]
-
 # This value must be True when you run this app on FaaS
 pbr_env = os.environ.get("SLACK_PROCESS_BEFORE_RESPONSE")
 process_before_response = pbr_env is not None and pbr_env == "1"
 
+
 app = App(
-    token_verification_enabled=False,
     token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
     process_before_response=process_before_response,
@@ -170,12 +166,16 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
         client.views_update(view_id=view["id"], view=result_view)
 
 
-import requests
-
-
 def call_kenall_and_build_blocks(
     postal_code: str, logger: Logger
 ) -> List[Dict[str, Any]]:
+    # Intentionally loading these modules here for faster boot time in AWS Lambda
+    import requests
+    from urllib.parse import quote
+
+    # Visit https://kenall.jp/home to grab your api key
+    kenall_api_key = os.environ["KENALL_API_KEY"]
+
     postal_code = postal_code.replace("-", "").replace("*", "").strip()
     url = f"https://api.kenall.jp/v1/postalcode/{quote(postal_code)}"
     headers = {"Authorization": f"Token {kenall_api_key}"}

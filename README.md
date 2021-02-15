@@ -8,7 +8,9 @@
 
 ### 動かし方
 
-ケンオールの API キーを発行、Slack アプリの設定を https://api.slack.com/apps で行った後、以下で起動できます。以下の例は Flask を使っていますが、すでに[ソケットモード](https://api.slack.com/socket-mode)についてご存知なら、そちらの方が楽だと思います。ソケットモードで起動する場合は、[こちらの記事](https://qiita.com/seratch/items/1a460c08c3e245b56441)の Python の例を参考に `slack_bolt.adapter.socket_mode.SocketModeHandler` を使って起動してください。
+ケンオールの API キーを発行、Slack アプリの設定を https://api.slack.com/apps で行った後、以下で起動できます。
+
+この例は Flask を使っていますが、すでに[ソケットモード](https://api.slack.com/socket-mode)についてご存知なら、そちらの方が楽だと思います。ソケットモードで起動する場合は、[こちらの記事](https://qiita.com/seratch/items/1a460c08c3e245b56441)の Python の例を参考に `python socket_mode_app.py` で起動してみてください。
 
 ```bash
 git clone git@github.com:seratch/kenall-for-slack.git
@@ -34,9 +36,11 @@ FLASK_APP=flask_app.py FLASK_ENV=development flask run -p 3000
 
 ```bash
 pip install python-lambda
+
 export SLACK_SIGNING_SECRET=
 export SLACK_BOT_TOKEN=
 export KENALL_API_KEY=
+# Lambda のときはこれを忘れずに
 export SLACK_PROCESS_BEFORE_RESPONSE=1
 
 lambda deploy \
@@ -44,11 +48,11 @@ lambda deploy \
   --requirements requirements-aws.txt
 ```
 
-python-lambda は非常に高速でデプロイできるのでここでは紹介していますが、API Gateway も含め管理したい場合は他のソリューションを使ってください。
+python-lambda は非常に高速なデプロイができるツールなので、紹介していますが、API Gateway も含め一元管理したい場合は他のソリューションを使ってください。
 
 ### Docker で動かす
 
-Flask + Gunicorn の雛形の Dockerfile を置いてありますが、自由に変更されてください。
+Flask + Gunicorn の雛形の Dockerfile を置いてありますが、自由に変更してください。
 
 ```bash
 docker build . -t your-repo/kenall-for-slack
@@ -60,7 +64,6 @@ docker run \
   -e PORT=3000 \
   -p 3000:3000 \
   -it your-repo/kenall-for-slack
-#
 ```
 
 ### ライセンス

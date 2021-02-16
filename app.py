@@ -3,20 +3,20 @@ import os
 from logging import Logger
 from typing import List, Dict, Any, Callable
 
-from slack_bolt import App, Ack
+from slack_bolt import App, Ack, Respond
 from slack_sdk import WebClient
 
 logging.basicConfig(level=logging.DEBUG)
 
 # This value must be True when you run this app on FaaS
 pbr_env = os.environ.get("SLACK_PROCESS_BEFORE_RESPONSE")
-process_before_response = pbr_env is not None and pbr_env == "1"
+running_on_faas = pbr_env is not None and pbr_env == "1"
 
 
 app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
-    process_before_response=process_before_response,
+    process_before_response=running_on_faas,
 )
 
 
@@ -63,29 +63,36 @@ search_form = {
 }
 
 
-def open_search_window_if_no_arg(body: dict, client: WebClient):
-    if len(body.get("text", "").strip()) == 0:
+def ack_command(body: dict, ack: Ack):
+    postal_code = body.get("text", "").strip().replace("-", "")
+    if len(postal_code) == 0:
+        ack()
+    elif len(postal_code) != 7 or not postal_code.isnumeric():
+        ack(text=":x: 郵便番号は 123-4567 または 1234567 の形式で指定してください")
+    else:
+        ack()
+
+
+def respond_to_command(body: dict, client: WebClient, logger: Logger, respond: Respond):
+    postal_code = body.get("text", "").strip().replace("-", "")
+    if len(postal_code) == 0:
         client.views_open(
             trigger_id=body["trigger_id"],
             view=search_form,
         )
-
-
-def handle_commands(body: dict, ack: Ack, logger: Logger):
-    postal_code = body.get("text", "").strip()
-    if len(postal_code) == 0:
-        ack()
+    elif len(postal_code) != 7 or not postal_code.isnumeric():
+        pass
     else:
         blocks = call_kenall_and_build_blocks(postal_code, logger)
-        ack(
-            text="ケンオールでの検索結果です",
+        respond(
+            text=":postbox: ケンオールでの検索結果です！ :mag:",
             blocks=blocks,
         )
 
 
 app.command(command="/kenall")(
-    ack=handle_commands,
-    lazy=[open_search_window_if_no_arg],
+    ack=ack_command,
+    lazy=[respond_to_command],
 )
 
 
@@ -110,13 +117,13 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
     if postal_code is None:
         return ack(response_action="errors", errors={"postal_code": "郵便番号を指定してください"})
     postal_code = postal_code.replace("-", "")
-    if len(postal_code) < 7 or not postal_code.isnumeric():
+    if len(postal_code) != 7 or not postal_code.isnumeric():
         return ack(
             response_action="errors",
             errors={"postal_code": "郵便番号は 123-4567 または 1234567 の形式で指定してください"},
         )
 
-    if not process_before_response:
+    if not running_on_faas:
         ack(
             response_action="update",
             view={
@@ -160,7 +167,7 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
         },
         "blocks": blocks,
     }
-    if process_before_response:
+    if running_on_faas:
         ack(response_action="update", view=result_view)
     else:
         client.views_update(view_id=view["id"], view=result_view)

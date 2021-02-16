@@ -113,10 +113,14 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
             view=search_form,
         )
 
-    postal_code = view["state"]["values"]["postal_code"]["input"]["value"]
-    if postal_code is None:
-        return ack(response_action="errors", errors={"postal_code": "郵便番号を指定してください"})
-    postal_code = postal_code.replace("-", "")
+    postal_code = (
+        view.get("state", {})
+        .get("values", {})
+        .get("postal_code", {})
+        .get("input", {})
+        .get("value", "")
+        .replace("-", "")
+    )
     if len(postal_code) != 7 or not postal_code.isnumeric():
         return ack(
             response_action="errors",

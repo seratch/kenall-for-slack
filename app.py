@@ -127,6 +127,7 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
         )
 
     if not running_on_faas:
+        printable_code = postal_code[:3] + "-" + postal_code[3:]
         ack(
             response_action="update",
             view={
@@ -145,7 +146,7 @@ def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": f":postbox: *〒 {postal_code}* に対応する郵便区画を検索中... :mag:",
+                            "text": f":postbox: *〒 {printable_code}* に対応する郵便区画を検索中... :mag:",
                         },
                     }
                 ],

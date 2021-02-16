@@ -1,0 +1,29 @@
+{
+  "name": "KENALL API App for Slack",
+  "description": "ケンオールでKEN_ALLに革命を。",
+  "repository": "https://github.com/seratch/kenall-for-slack",
+  "keywords": [
+    "Slack",
+    "KEN_ALL",
+    "kenall.jp",
+    "Bolt",
+    "Python",
+    "Heroku"
+  ],
+  "env": {
+    "SLACK_SIGNING_SECRET": {
+      "description": "Settings > Basic Information > Signing Secret の値 (https://api.slack.com/apps)",
+      "value": "***"
+    },
+    "SLACK_BOT_TOKEN": {
+      "description": "Settings > Install App > Bot User OAuth Access Token の値 (https://api.slack.com/apps)",
+      "value": "xoxb-**"
+    },
+    "KENALL_API_KEY": {
+      "description": "ケンオールの API キー (https://kenall.jp/home)",
+      "value": "***"
+    }
+  },
+  "image": "heroku/python"
+}
+

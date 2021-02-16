@@ -55,6 +55,23 @@ Flask で動かしているなら、確定したエンドポイントの URL を
 
 スラッシュコマンドは `/kenall`、グローバルショートカットの Callback ID は `kenall-search` とすると、このサンプルアプリのコードそのままで動作するでしょう。
 
+### Heroku で動かす
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+または
+
+```bash
+heroku create
+heroku config:set SLACK_SIGNING_SECRET=$SLACK_SIGNING_SECRET
+heroku config:set SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN
+heroku config:set KENALL_API_KEY=$KENALL_API_KEY
+
+git add . -v
+git commit -m'ケンオールでKEN_ALLに革命を。'
+git push heroku main
+```
+
 ### Docker で動かす
 
 Flask + Gunicorn の雛形の Dockerfile を置いてありますが、自由に変更してください。

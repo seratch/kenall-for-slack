@@ -72,6 +72,8 @@ git commit -m'ケンオールでKEN_ALLに革命を。'
 git push heroku main
 ```
 
+Heroku アプリが起動したら https://api.slack.com/apps のアプリ設定へ行き、**Interactivity & Shortcuts** と **Slash Commands** の **Request URL** に `https://{あなたのサブドメイン}.herokuapp.com/slack/events` を設定してください。
+
 ### Docker で動かす
 
 Flask + Gunicorn の雛形の Dockerfile を置いてありますが、自由に変更してください。

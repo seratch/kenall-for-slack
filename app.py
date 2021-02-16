@@ -107,16 +107,15 @@ def handle_shortcuts(body: dict, ack: Ack, client: WebClient):
 
 @app.view("kenall-search")
 def show_search_result(ack: Ack, view: dict, client: WebClient, logger: Logger):
-    if len(view["state"]["values"]) == 0:
+    state_values = view.get("state", {}).get("values", {})
+    if len(state_values) == 0:
         return ack(
             response_action="update",
             view=search_form,
         )
 
     postal_code = (
-        view.get("state", {})
-        .get("values", {})
-        .get("postal_code", {})
+        state_values.get("postal_code", {})
         .get("input", {})
         .get("value", "")
         .replace("-", "")
